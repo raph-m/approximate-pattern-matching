@@ -130,7 +130,6 @@ int main(int argc, char ** argv) {
     nb_patterns = argc - 3;
     /* Fill the pattern array */
     pattern = (char **)malloc( nb_patterns * sizeof( char * ) ) ;
-    chunk_size=nb_patterns/(size-1);
 
     if (pattern == NULL) {
         fprintf(
@@ -171,7 +170,6 @@ int main(int argc, char ** argv) {
     }
 	
     /* Allocate the array of matches */
-    if(rank==0) {
         n_matches = (int *)malloc( nb_patterns * sizeof( int ) ) ;
         if (n_matches == NULL) {
             fprintf(
@@ -179,10 +177,10 @@ int main(int argc, char ** argv) {
                     "Error: unable to allocate memory for %ldB\n",
                     nb_patterns * sizeof( int )
             );
-        return 1 ;
+        	return 1 ;
         }
-    }
-
+	char * rcv_buf;
+	
   /*****
  *    * BEGIN MAIN LOOP
  *       ******/
@@ -191,84 +189,97 @@ int main(int argc, char ** argv) {
     if(rank==0){
         gettimeofday(&t1, NULL);
     }
-    for ( i = 0 ; i < nb_patterns ; i++ ) {
-
-        if(rank==i/chunk_size){
-
-            int size_pattern = strlen(pattern[i]) ;
-
-            int * column ;
-
-            int matches = 0 ;
-
-            column = (int *)malloc( (size_pattern+1) * sizeof( int ) ) ;
-
-            if ( column == NULL ) {
-                fprintf( stderr, "Error: unable to allocate memory for column (%ldB)\n",
-                        (size_pattern+1) * sizeof( int ) ) ;
-                return 1 ;
-            }
-
-            for ( j = 0 ; j < n_bytes ; j++ ) {
-                int distance = 0 ;
-                int size ;
-
-    #if APM_DEBUG
-                if ( j % 100 == 0 )
-                {
-                printf( "Procesing byte %d (out of %d)\n", j, n_bytes ) ;
-                }
-    #endif
-
-                size = size_pattern ;
-                if (n_bytes - j < size_pattern) {
-                    size = n_bytes - j ;
-                }
-
-                distance = levenshtein(pattern[i], &buf[j], size, column) ;
-
-                if (distance <= approx_factor) {
-                    matches++ ;
-                }
-            }
-
-            free(column);
-            if (rank != 0) {
-                MPI_Send(&matches, 1, MPI_INTEGER, 0, i, MPI_COMM_WORLD);
-            }
-            else {
-                n_matches[i] = matches;
-
-            }
-        }
+	int max_pat=0;
+	for(i=0; i<nb_patterns; i++){
+		max_pat=max_pat>strlen(pattern[i]) ? max_pat : strlen(pattern[i]);
+	}
+    if(rank==0){
+		int step=n_bytes/(size-1);
+		int * displs=(int *)malloc( (size) * sizeof( int ) ) ;
+		int * scounts=(int *)malloc( (size) * sizeof( int ) ) ;
+		for(i=0; i<size-1; i++){
+			displs[i]=step*i;
+			scounts[i]=step+max_pat-1;
+		}
+		displs[size-1]=step*(size-1);
+		scounts[size-1]=n_bytes%(size-1);    
+			
     }
+	MPI_Bcast(&n_bytes, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Recv(&n_bytes, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	rcv_buf=(char *)malloc( (n_bytes/(size-1)+max_pat-1) * sizeof( char ) ) ;
+	MPI_Scatterv(&buf, scounts, displs, MPI_CHAR, &rcv_buf, step+max_pat, MPI_CHAR, 0, MPI_COMM_WORLD);
+	
+    for ( i = 0 ; i < nb_patterns ; i++ )
+  {
+      int size_pattern = strlen(pattern[i]) ;
 
-    if (rank == 0) {
-        for (i = chunk_size; i < nb_patterns; i++){
-            MPI_Recv(&n_matches[i], 1, MPI_INTEGER, i/chunk_size, i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        }
-    }
+      int * column ;
+	  int s;
 
-      /* Timer stop */
-    if (rank == 0) {
-        gettimeofday(&t2, NULL);
+      n_matches[i] = 0 ;
 
-        duration = (t2.tv_sec -t1.tv_sec)+((t2.tv_usec-t1.tv_usec)/1e6);
+      column = (int *)malloc( (size_pattern+1) * sizeof( int ) ) ;
+      if ( column == NULL ) 
+      {
+          fprintf( stderr, "Error: unable to allocate memory for column (%ldB)\n",
+                  (size_pattern+1) * sizeof( int ) ) ;
+          return 1 ;
+      }
+	  if(rank==size-1){
+		chunk_size=n_bytes%(size-1); 
+      }
+	  else{
+		chunk_size=strlen(rcv_buf);
+	  }
+      for ( j = 0 ; j < chunk_size ; j++ ) 
+      {
+          int distance = 0 ;
+          int size ;
 
-        printf( "APM done in %lf s\n", duration) ;
-    }
+#if APM_DEBUG
+          if ( j % 100 == 0 )
+          {
+          printf( "Procesing byte %d (out of %d)\n", j, n_bytes ) ;
+          }
+#endif
 
-      /*****
-     *    * END MAIN LOOP
-     *       ******/
-    if(rank==0) {
-        for (i = 0; i < nb_patterns; i++) {
-            printf(
-                    "Number of matches for pattern <%s>: %d\n",
-                    pattern[i],
-                    n_matches[i]
-            );
-        }
-    }
-      return 0 ;
-    }
+          s = size_pattern ;
+          if ( chunk_size - j < size_pattern )
+          {
+              s = chunk_size - j ;
+          }
+
+          distance = levenshtein( pattern[i], &rcv_buf[j], s, column ) ;
+
+          if ( distance <= approx_factor ) {
+              n_matches[i]++ ;
+          }
+      }
+
+  free( column );
+  }
+  if(rank==0){
+	int * rcv_matches = (int *)malloc( nb_patterns * sizeof( int ) ) ;
+  }
+	
+  MPI_Reduce(&n_matches, &rcv_matches, nb_patterns, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD); 
+  /* Timer stop */
+  gettimeofday(&t2, NULL);
+
+  duration = (t2.tv_sec -t1.tv_sec)+((t2.tv_usec-t1.tv_usec)/1e6);
+
+  printf( "APM done in %lf s\n", duration ) ;
+
+  /*****
+ *    * END MAIN LOOP
+ *       ******/
+	if(rank==0){
+  		for ( i = 0 ; i < nb_patterns ; i++ )
+  		{
+      		printf( "Number of matches for pattern <%s>: %d\n", 
+              pattern[i], rcv_matches[i] ) ;
+  		}
+
+  	return 0 ;
+}
