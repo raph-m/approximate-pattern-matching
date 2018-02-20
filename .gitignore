@@ -1,6 +1,8 @@
-obj/
+bj/
 apm_par
 apm
 src/apm_par.c.bck
 .idea
 cmake-build-debug/
+apm_par_seq
+obj/

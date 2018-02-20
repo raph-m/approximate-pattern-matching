@@ -96,6 +96,9 @@ int levenshtein(char *s1, char *s2, int len, int * column) {
 int main(int argc, char ** argv) {
     MPI_Init(&argc, &argv);
     char ** pattern ;
+	int * scounts;
+	int * displs;
+	int step;
     char * filename ;
     int approx_factor = 0 ;
     int nb_patterns = 0 ;
@@ -107,6 +110,7 @@ int main(int argc, char ** argv) {
     int n_bytes ;
     int rank;
     int size;
+	int * rcv_matches;
     int chunk_size;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -194,21 +198,24 @@ int main(int argc, char ** argv) {
 		max_pat=max_pat>strlen(pattern[i]) ? max_pat : strlen(pattern[i]);
 	}
     if(rank==0){
-		int step=n_bytes/(size-1);
-		int * displs=(int *)malloc( (size) * sizeof( int ) ) ;
-		int * scounts=(int *)malloc( (size) * sizeof( int ) ) ;
+		step=n_bytes/(size-1);
+		displs=(int *)malloc( (size) * sizeof( int ) ) ;
+		scounts=(int *)malloc( (size) * sizeof( int ) ) ;
 		for(i=0; i<size-1; i++){
 			displs[i]=step*i;
 			scounts[i]=step+max_pat-1;
 		}
 		displs[size-1]=step*(size-1);
-		scounts[size-1]=n_bytes%(size-1);    
+		scounts[size-1]=n_bytes%(size-1);   
 			
     }
 	MPI_Bcast(&n_bytes, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	MPI_Recv(&n_bytes, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	rcv_buf=(char *)malloc( (n_bytes/(size-1)+max_pat-1) * sizeof( char ) ) ;
-	MPI_Scatterv(&buf, scounts, displs, MPI_CHAR, &rcv_buf, step+max_pat, MPI_CHAR, 0, MPI_COMM_WORLD);
+	printf("hello from %d\n", rank);
+	rcv_buf=(char *)malloc( (n_bytes/(size-1)+max_pat-1) * sizeof( char ) ) ;	
+	MPI_Barrier(MPI_COMM_WORLD);
+
+	MPI_Scatterv(&buf, scounts, displs, MPI_CHAR, &rcv_buf, n_bytes/(size-1)+max_pat-1, MPI_CHAR, 0, MPI_COMM_WORLD);
+	printf("hello from %d\n", rank);
 	
     for ( i = 0 ; i < nb_patterns ; i++ )
   {
@@ -260,7 +267,7 @@ int main(int argc, char ** argv) {
   free( column );
   }
   if(rank==0){
-	int * rcv_matches = (int *)malloc( nb_patterns * sizeof( int ) ) ;
+	rcv_matches = (int *)malloc( nb_patterns * sizeof( int ) ) ;
   }
 	
   MPI_Reduce(&n_matches, &rcv_matches, nb_patterns, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD); 
@@ -276,10 +283,10 @@ int main(int argc, char ** argv) {
  *       ******/
 	if(rank==0){
   		for ( i = 0 ; i < nb_patterns ; i++ )
-  		{
+  		{	
       		printf( "Number of matches for pattern <%s>: %d\n", 
               pattern[i], rcv_matches[i] ) ;
   		}
-
+	}
   	return 0 ;
 }
