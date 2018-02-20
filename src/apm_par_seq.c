@@ -110,7 +110,9 @@ int main(int argc, char ** argv) {
     int n_bytes ;
     int rank;
     int size;
-	int * rcv_matches;
+
+    int max_pat;
+
     int chunk_size;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -123,7 +125,7 @@ int main(int argc, char ** argv) {
                argv[0]);
     return 1;
     }
-
+    n_bytes=0;
     /* Get the distance factor */
     approx_factor = atoi(argv[1]);
 
@@ -167,11 +169,12 @@ int main(int argc, char ** argv) {
         "looking for %d pattern(s) in file %s w/ distance of %d\n",
         nb_patterns, filename, approx_factor );
     }
-
-    buf = read_input_file( filename, &n_bytes ) ;
-    if ( buf == NULL ) {
-        return 1 ;
-    }
+    if(rank==0){
+    	buf = read_input_file( filename, &n_bytes ) ;
+    	if ( buf == NULL ) {
+        	return 1 ;
+    	}
+   }
 	
     /* Allocate the array of matches */
         n_matches = (int *)malloc( nb_patterns * sizeof( int ) ) ;
@@ -183,8 +186,6 @@ int main(int argc, char ** argv) {
             );
         	return 1 ;
         }
-	char * rcv_buf;
-	
   /*****
  *    * BEGIN MAIN LOOP
  *       ******/
@@ -193,29 +194,25 @@ int main(int argc, char ** argv) {
     if(rank==0){
         gettimeofday(&t1, NULL);
     }
-	int max_pat=0;
+	max_pat=0;
 	for(i=0; i<nb_patterns; i++){
 		max_pat=max_pat>strlen(pattern[i]) ? max_pat : strlen(pattern[i]);
 	}
-    if(rank==0){
-		step=n_bytes/(size-1);
-		displs=(int *)malloc( (size) * sizeof( int ) ) ;
-		scounts=(int *)malloc( (size) * sizeof( int ) ) ;
-		for(i=0; i<size-1; i++){
-			displs[i]=step*i;
-			scounts[i]=step+max_pat-1;
-		}
-		displs[size-1]=step*(size-1);
-		scounts[size-1]=n_bytes%(size-1);   
-			
-    }
-	MPI_Bcast(&n_bytes, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	printf("hello from %d\n", rank);
-	rcv_buf=(char *)malloc( (n_bytes/(size-1)+max_pat-1) * sizeof( char ) ) ;	
+	MPI_Bcast(&n_bytes, 1, MPI_INT, 0, MPI_COMM_WORLD);	
 	MPI_Barrier(MPI_COMM_WORLD);
-
-	MPI_Scatterv(&buf, scounts, displs, MPI_CHAR, &rcv_buf, n_bytes/(size-1)+max_pat-1, MPI_CHAR, 0, MPI_COMM_WORLD);
-	printf("hello from %d\n", rank);
+	step=n_bytes/(size);
+	displs=malloc( (size) * sizeof( int ) ) ;
+	scounts=malloc( (size) * sizeof( int ) ) ;
+	for(i=0; i<size-1; i++){
+		displs[i]=step*i;
+		scounts[i]=step+max_pat-1;
+	}
+	displs[size-1]=step*(size-1);
+	scounts[size-1]=step+max_pat-1-n_bytes%(size);   
+	char rcv_buf[step+max_pat-1] ;
+	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Scatterv(&buf, scounts, displs, MPI_CHAR, &rcv_buf, step+max_pat-1, MPI_CHAR, 0, MPI_COMM_WORLD);
+	MPI_Barrier(MPI_COMM_WORLD);
 	
     for ( i = 0 ; i < nb_patterns ; i++ )
   {
@@ -233,12 +230,13 @@ int main(int argc, char ** argv) {
                   (size_pattern+1) * sizeof( int ) ) ;
           return 1 ;
       }
-	  if(rank==size-1){
-		chunk_size=n_bytes%(size-1); 
+	  if(rank!=size-1){
+		chunk_size=n_bytes/(size)+max_pat-1-n_bytes%(size); 
       }
 	  else{
 		chunk_size=strlen(rcv_buf);
 	  }
+
       for ( j = 0 ; j < chunk_size ; j++ ) 
       {
           int distance = 0 ;
@@ -256,21 +254,20 @@ int main(int argc, char ** argv) {
           {
               s = chunk_size - j ;
           }
-
+		
           distance = levenshtein( pattern[i], &rcv_buf[j], s, column ) ;
 
           if ( distance <= approx_factor ) {
               n_matches[i]++ ;
           }
       }
+      printf("%d matches for %s\n", n_matches[0]);
 
   free( column );
   }
-  if(rank==0){
-	rcv_matches = (int *)malloc( nb_patterns * sizeof( int ) ) ;
-  }
-	
-  MPI_Reduce(&n_matches, &rcv_matches, nb_patterns, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD); 
+  int rcv_matches[nb_patterns] ;
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Reduce(n_matches, rcv_matches, nb_patterns, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD); 
   /* Timer stop */
   gettimeofday(&t2, NULL);
 
@@ -283,10 +280,12 @@ int main(int argc, char ** argv) {
  *       ******/
 	if(rank==0){
   		for ( i = 0 ; i < nb_patterns ; i++ )
-  		{	
+  		{
+		printf("hello from %d\n", rank);	
       		printf( "Number of matches for pattern <%s>: %d\n", 
               pattern[i], rcv_matches[i] ) ;
   		}
 	}
+	MPI_Finalize();
   	return 0 ;
 }
