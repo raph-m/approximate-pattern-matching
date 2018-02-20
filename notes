@@ -1,0 +1,9 @@
+On a déjà fait la parallélisation selon les patterns.
+
+Maintenant on veut paralléliser sur la séquence.
+
+rank0 lit le fichier. ENsuite scatter_v permet de distribuer les bouts de séquence de taille différentes.
+
+Chacun fait le calcul, sans paralllélisme.
+
+balancer les n_matches pour chaque bout de séquence.
