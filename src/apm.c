@@ -169,7 +169,6 @@ main( int argc, char ** argv )
   printf( "Approximate Pattern Mathing: "
           "looking for %d pattern(s) in file %s w/ distance of %d\n", 
           nb_patterns, filename, approx_factor ) ;
-
   buf = read_input_file( filename, &n_bytes ) ;
   if ( buf == NULL )
   {
@@ -229,7 +228,7 @@ main( int argc, char ** argv )
               size = n_bytes - j ;
           }
 
-          distance = levenshtein( pattern[i], &buf[j], size, column ) ;
+          distance = levenshtein( pattern[i], &buf[j], size, column )+size_pattern-size ;
 
           if ( distance <= approx_factor ) {
               n_matches[i]++ ;

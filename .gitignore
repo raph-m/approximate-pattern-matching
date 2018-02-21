@@ -6,3 +6,4 @@ src/apm_par.c.bck
 cmake-build-debug/
 apm_par_seq
 obj/
+dna/test.fa

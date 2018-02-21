@@ -208,18 +208,19 @@ int main(int argc, char ** argv) {
 		scounts[i]=step+max_pat-1;
 	}
 	displs[size-1]=step*(size-1);
-	scounts[size-1]=step+max_pat-1-n_bytes%(size);   
-	char rcv_buf[step+max_pat-1] ;
+	scounts[size-1]=step+n_bytes%(size);   
+	char rcv_buf[step+max_pat-1+n_bytes%size] ;
 	MPI_Barrier(MPI_COMM_WORLD);
-	MPI_Scatterv(&buf, scounts, displs, MPI_CHAR, &rcv_buf, step+max_pat-1, MPI_CHAR, 0, MPI_COMM_WORLD);
+	MPI_Scatterv(buf, scounts, displs, MPI_CHAR, rcv_buf, step+max_pat-1+n_bytes%size, MPI_CHAR, 0, MPI_COMM_WORLD);
+
 	MPI_Barrier(MPI_COMM_WORLD);
+	
 	
     for ( i = 0 ; i < nb_patterns ; i++ )
   {
       int size_pattern = strlen(pattern[i]) ;
 
       int * column ;
-	  int s;
 
       n_matches[i] = 0 ;
 
@@ -231,16 +232,16 @@ int main(int argc, char ** argv) {
           return 1 ;
       }
 	  if(rank!=size-1){
-		chunk_size=n_bytes/(size)+max_pat-1-n_bytes%(size); 
+		chunk_size=step+max_pat-1; 
       }
 	  else{
-		chunk_size=strlen(rcv_buf);
+		chunk_size=step+n_bytes%(size);
 	  }
 
       for ( j = 0 ; j < chunk_size ; j++ ) 
       {
           int distance = 0 ;
-          int size ;
+          int s ;
 
 #if APM_DEBUG
           if ( j % 100 == 0 )
@@ -255,13 +256,13 @@ int main(int argc, char ** argv) {
               s = chunk_size - j ;
           }
 		
-          distance = levenshtein( pattern[i], &rcv_buf[j], s, column ) ;
+          distance = levenshtein( pattern[i], &rcv_buf[j], s, column )+size_pattern-s ;
 
           if ( distance <= approx_factor ) {
               n_matches[i]++ ;
           }
       }
-      printf("%d matches for %s\n", n_matches[0]);
+      printf("%d matches from %d\n", n_matches[0], rank);
 
   free( column );
   }
@@ -281,7 +282,6 @@ int main(int argc, char ** argv) {
 	if(rank==0){
   		for ( i = 0 ; i < nb_patterns ; i++ )
   		{
-		printf("hello from %d\n", rank);	
       		printf( "Number of matches for pattern <%s>: %d\n", 
               pattern[i], rcv_matches[i] ) ;
   		}
