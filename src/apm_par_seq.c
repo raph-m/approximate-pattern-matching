@@ -134,6 +134,7 @@ int main(int argc, char ** argv) {
 
     /* Get the number of patterns that the user wants to search for */
     nb_patterns = argc - 3;
+
     /* Fill the pattern array */
     pattern = (char **)malloc( nb_patterns * sizeof( char * ) ) ;
 
@@ -145,6 +146,7 @@ int main(int argc, char ** argv) {
         );
         return 1 ;
     }
+
     /* Grab the patterns */
     for (i = 0 ; i < nb_patterns ; i++) {
         int l ;
@@ -164,11 +166,13 @@ int main(int argc, char ** argv) {
 
         strncpy( pattern[i], argv[i+3], (l+1) ) ;
     }
+
     if(rank==0) {
         printf( "Approximate Pattern Mathing: "
         "looking for %d pattern(s) in file %s w/ distance of %d\n",
         nb_patterns, filename, approx_factor );
     }
+
     if(rank==0){
     	buf = read_input_file( filename, &n_bytes ) ;
     	if ( buf == NULL ) {
@@ -177,15 +181,15 @@ int main(int argc, char ** argv) {
    }
 	
     /* Allocate the array of matches */
-        n_matches = (int *)malloc( nb_patterns * sizeof( int ) ) ;
-        if (n_matches == NULL) {
-            fprintf(
-                    stderr,
-                    "Error: unable to allocate memory for %ldB\n",
-                    nb_patterns * sizeof( int )
-            );
-        	return 1 ;
-        }
+    n_matches = (int *)malloc( nb_patterns * sizeof( int ) ) ;
+    if (n_matches == NULL) {
+        fprintf(
+                stderr,
+                "Error: unable to allocate memory for %ldB\n",
+                nb_patterns * sizeof( int )
+        );
+        return 1 ;
+    }
   /*****
  *    * BEGIN MAIN LOOP
  *       ******/
@@ -194,21 +198,28 @@ int main(int argc, char ** argv) {
     if(rank==0){
         gettimeofday(&t1, NULL);
     }
+
 	max_pat=0;
+
 	for(i=0; i<nb_patterns; i++){
 		max_pat=max_pat>strlen(pattern[i]) ? max_pat : strlen(pattern[i]);
 	}
+
 	MPI_Bcast(&n_bytes, 1, MPI_INT, 0, MPI_COMM_WORLD);	
 	MPI_Barrier(MPI_COMM_WORLD);
+
 	step=n_bytes/(size);
 	displs=malloc( (size) * sizeof( int ) ) ;
 	scounts=malloc( (size) * sizeof( int ) ) ;
+
 	for(i=0; i<size-1; i++){
 		displs[i]=step*i;
 		scounts[i]=step+max_pat-1;
 	}
+
 	displs[size-1]=step*(size-1);
-	scounts[size-1]=step+n_bytes%(size);   
+	scounts[size-1]=step+n_bytes%(size);
+
 	char rcv_buf[step+max_pat-1+n_bytes%size] ;
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Scatterv(buf, scounts, displs, MPI_CHAR, rcv_buf, step+max_pat-1+n_bytes%size, MPI_CHAR, 0, MPI_COMM_WORLD);
@@ -216,69 +227,68 @@ int main(int argc, char ** argv) {
 	MPI_Barrier(MPI_COMM_WORLD);
 	
 	
-    for ( i = 0 ; i < nb_patterns ; i++ )
-  {
-      int size_pattern = strlen(pattern[i]) ;
+    for ( i = 0 ; i < nb_patterns ; i++ ) {
+        int size_pattern = strlen(pattern[i]) ;
 
-      int * column ;
+        int * column ;
 
-      n_matches[i] = 0 ;
+        n_matches[i] = 0 ;
 
-      column = (int *)malloc( (size_pattern+1) * sizeof( int ) ) ;
-      if ( column == NULL ) 
-      {
+        column = (int *)malloc( (size_pattern+1) * sizeof( int ) ) ;
+        if ( column == NULL )
+        {
           fprintf( stderr, "Error: unable to allocate memory for column (%ldB)\n",
                   (size_pattern+1) * sizeof( int ) ) ;
           return 1 ;
-      }
-	  if(rank!=size-1){
-		chunk_size=step+max_pat-1; 
-      }
-	  else{
-		chunk_size=step+n_bytes%(size);
-	  }
+        }
+        if (rank!=size-1) {
+            chunk_size=step+max_pat-1;
+        }
+        else {
+            chunk_size=step+n_bytes%(size);
+        }
 
-      for ( j = 0 ; j < chunk_size ; j++ ) 
-      {
-          int distance = 0 ;
-          int s ;
+        for ( j = 0 ; j < chunk_size ; j++ ) {
+            int distance = 0 ;
+            int s ;
 
-#if APM_DEBUG
-          if ( j % 100 == 0 )
-          {
-          printf( "Procesing byte %d (out of %d)\n", j, n_bytes ) ;
-          }
-#endif
+            #if APM_DEBUG
+            if ( j % 100 == 0 )
+            {
+            printf( "Procesing byte %d (out of %d)\n", j, n_bytes ) ;
+            }
+            #endif
 
-          s = size_pattern ;
-          if ( chunk_size - j < size_pattern )
-          {
+            s = size_pattern ;
+            if ( chunk_size - j < size_pattern )
+            {
               s = chunk_size - j ;
-          }
-		
-          distance = levenshtein( pattern[i], &rcv_buf[j], s, column )+size_pattern-s ;
+            }
 
-          if ( distance <= approx_factor ) {
+            distance = levenshtein( pattern[i], &rcv_buf[j], s, column )+size_pattern-s ;
+
+            if ( distance <= approx_factor ) {
               n_matches[i]++ ;
-          }
-      }
-      printf("%d matches from %d\n", n_matches[0], rank);
+            }
+        }
+        printf("%d matches from %d\n", n_matches[0], rank);
+        free( column );
+    }
 
-  free( column );
-  }
-  int rcv_matches[nb_patterns] ;
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Reduce(n_matches, rcv_matches, nb_patterns, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD); 
-  /* Timer stop */
-  gettimeofday(&t2, NULL);
+    int rcv_matches[nb_patterns] ;
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Reduce(n_matches, rcv_matches, nb_patterns, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    /* Timer stop */
+    gettimeofday(&t2, NULL);
 
-  duration = (t2.tv_sec -t1.tv_sec)+((t2.tv_usec-t1.tv_usec)/1e6);
+    duration = (t2.tv_sec -t1.tv_sec)+((t2.tv_usec-t1.tv_usec)/1e6);
 
-  printf( "APM done in %lf s\n", duration ) ;
+    printf( "APM done in %lf s\n", duration ) ;
 
-  /*****
- *    * END MAIN LOOP
- *       ******/
+    /*****
+    *    * END MAIN LOOP
+    *       ******/
+
 	if(rank==0){
   		for ( i = 0 ; i < nb_patterns ; i++ )
   		{
