@@ -206,7 +206,7 @@ int main(int argc, char ** argv) {
 	}
 
 	MPI_Bcast(&n_bytes, 1, MPI_INT, 0, MPI_COMM_WORLD);	
-	MPI_Barrier(MPI_COMM_WORLD);
+
 
 	step=n_bytes/(size);
 	displs=malloc( (size) * sizeof( int ) ) ;
@@ -221,10 +221,9 @@ int main(int argc, char ** argv) {
 	scounts[size-1]=step+n_bytes%(size);
 
 	char rcv_buf[step+max_pat-1+n_bytes%size] ;
-	MPI_Barrier(MPI_COMM_WORLD);
+
 	MPI_Scatterv(buf, scounts, displs, MPI_CHAR, rcv_buf, step+max_pat-1+n_bytes%size, MPI_CHAR, 0, MPI_COMM_WORLD);
 
-	MPI_Barrier(MPI_COMM_WORLD);
 	
 	
     for ( i = 0 ; i < nb_patterns ; i++ ) {
@@ -276,7 +275,7 @@ int main(int argc, char ** argv) {
     }
 
     int rcv_matches[nb_patterns] ;
-    MPI_Barrier(MPI_COMM_WORLD);
+
     MPI_Reduce(n_matches, rcv_matches, nb_patterns, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
     /* Timer stop */
     gettimeofday(&t2, NULL);
