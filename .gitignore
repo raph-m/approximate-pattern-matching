@@ -7,3 +7,5 @@ cmake-build-debug/
 apm_par_seq
 obj/
 dna/test.fa
+dna/chr1.fa
+apm_omp
