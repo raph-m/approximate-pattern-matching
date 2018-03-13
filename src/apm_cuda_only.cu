@@ -136,9 +136,6 @@ int levenshtein(char *s1, char *s2, int len, int * column) {
 
 int main(int argc, char ** argv) {
     char ** pattern ;
-    int * scounts;
-    int * displs;
-    int step;
     char * filename ;
     int approx_factor = 0 ;
     int nb_patterns = 0 ;
@@ -149,11 +146,8 @@ int main(int argc, char ** argv) {
     int * n_matches ;
     int n_bytes ;
     int rank;
-    int size;
 
     int max_pat;
-
-    int chunk_size;
 
     /* Check number of arguments */
     if (argc < 4) {
