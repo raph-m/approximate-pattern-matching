@@ -24,3 +24,12 @@ salloc -N 1 -n 1 mpirun ./apm_omp 3 dna/file.fa "ATTT" "AINDAPDSLD"
 runner Cuda Only:
 /usr/local/cuda-9.0/bin/nvcc -o apm_cuda_only src/apm_cuda_only.cu
 ./apm_cuda_only 3 dna/small_chrY.fa "ATTTGCC" "AGCTG"
+
+lien pour le chromosome chr1.a:
+http://hgdownload.cse.ucsc.edu/goldenPath/hg38/chromosomes/
+
+prendre:
+chr6.fa: 174,2 M
+chrY.fa: 58,4 M
+chr6_GL000250v2_alt.fa: 4,8 M
+chr1_KI270710v1_random.fa: 41K
