@@ -231,17 +231,8 @@ int main(int argc, char ** argv) {
     for ( i = 0 ; i < nb_patterns ; i++ ) {
         int size_pattern = strlen(pattern[i]) ;
 
-        //int * column ;
-
         n_matches[i] = 0 ;
 
-        //column = (int *)malloc( (size_pattern+1) * sizeof( int ) ) ;
-        /*if ( column == NULL )
-        {
-          fprintf( stderr, "Error: unable to allocate memory for column (%ldB)\n",
-                  (size_pattern+1) * sizeof( int ) ) ;
-          return 1 ;
-        }*/
 		int my_sum=0;
         if (rank!=size-1) {
             chunk_size=step;
@@ -303,13 +294,12 @@ int main(int argc, char ** argv) {
         }
 		n_matches[i]=my_sum;
 	    printf("%d matches from %d\n", n_matches[i], rank);
-	    //free( column );
-		
     }
 
     int rcv_matches[nb_patterns] ;
 
     MPI_Reduce(n_matches, rcv_matches, nb_patterns, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+
     /* Timer stop */
     gettimeofday(&t2, NULL);
 	MPI_Barrier(MPI_COMM_WORLD);
