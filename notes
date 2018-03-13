@@ -7,3 +7,20 @@ rank0 lit le fichier. ENsuite scatter_v permet de distribuer les bouts de séque
 Chacun fait le calcul, sans paralllélisme.
 
 balancer les n_matches pour chaque bout de séquence.
+
+runner le truc normal:
+gcc -o apm src/apm.c
+./apm 3 dna/file.fa "ATTT" "AINDAPDSLD"
+
+runner mpi:
+mpicc -o apm_par_seq src/apm_par_seq.c
+salloc -N 1 -n 1 mpirun ./apm_par_seq 3 dna/file.fa "ATTT" "AINDAPDSLD"
+(faire l'enquête sur les N et n ce qu'ils font)
+
+runner mpi + openMP:
+mpicc -fopenmp -o apm_omp src/apm_omp.c
+salloc -N 1 -n 1 mpirun ./apm_omp 3 dna/file.fa "ATTT" "AINDAPDSLD"
+
+runner Cuda Only:
+/usr/local/cuda-9.0/bin/nvcc -o apm_cuda_only src/apm_cuda_only.cu
+./apm_cuda_only 3 dna/small_chrY.fa "ATTTGCC" "AGCTG"
