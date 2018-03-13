@@ -176,7 +176,6 @@ int main(int argc, char ** argv) {
 
     if(rank==0){
     	buf = read_input_file( filename, &n_bytes ) ;
-		printf("ok man");
     	if ( buf == NULL ) {
         	return 1 ;
     	}
@@ -222,7 +221,8 @@ int main(int argc, char ** argv) {
 	displs[size-1]=step*(size-1);
 	scounts[size-1]=step+n_bytes%(size);
 
-	char rcv_buf[step+max_pat-1+n_bytes%size] ;
+	char * rcv_buf;
+	rcv_buf= (char *) malloc((step+max_pat-1+n_bytes%size)*sizeof(char)) ;
 
 	MPI_Scatterv(buf, scounts, displs, MPI_CHAR, rcv_buf, step+max_pat-1+n_bytes%size, MPI_CHAR, 0, MPI_COMM_WORLD);
 
@@ -243,7 +243,7 @@ int main(int argc, char ** argv) {
           return 1 ;
         }*/
         if (rank!=size-1) {
-            chunk_size=step+max_pat-1;
+            chunk_size=step+size_pattern-1;
         }
         else {
             chunk_size=step+n_bytes%(size);
@@ -269,7 +269,6 @@ int my_sum=0;
             {
               s = chunk_size - j ;
             }
-
             distance = levenshtein( pattern[i], &rcv_buf[j], s, column )+size_pattern-s ;
 
             if ( distance <= approx_factor ) {
@@ -278,8 +277,8 @@ int my_sum=0;
 			free( column );
         }
 }
-n_matches[i]=my_sum;
-        printf("%d matches from %d\n", n_matches[0], rank);
+		n_matches[i]=my_sum;
+        printf("%d matches from %d\n", n_matches[i], rank);
         //free( column );
     }
 
