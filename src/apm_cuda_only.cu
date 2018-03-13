@@ -108,8 +108,6 @@ void cuda_levenshtein(char *s1, char *s2, int len, int * result, int n_max, int 
 }
 
 
-
-
 int levenshtein(char *s1, char *s2, int len, int * column) {
     unsigned int x, y, lastdiag, olddiag;
 
@@ -235,8 +233,9 @@ int main(int argc, char ** argv) {
     for(i=0; i<nb_patterns; i++){
         max_pat=max_pat>strlen(pattern[i]) ? max_pat : strlen(pattern[i]);
     }
-	printf("hello %d\n", n_bytes);
+
     for ( i = 0 ; i < nb_patterns ; i++ ) {
+
         int size_pattern = strlen(pattern[i]) ;
         n_matches[i] = 0 ;
         char * d_rcv_buf;
@@ -244,29 +243,33 @@ int main(int argc, char ** argv) {
         int * d_result;
         int n_max = (n_bytes-size_pattern + 1);
         int * result;
-	result=(int *) malloc(sizeof(int)*n_max);
-	cudaMalloc((void **)&d_rcv_buf, n_bytes*sizeof(char));
-	cudaMalloc((void **)&d_pattern, size_pattern*sizeof(char));
-	cudaMalloc((void **)&d_result, n_max*sizeof(int));
 
-	cudaMemcpy(d_rcv_buf, buf, n_bytes*sizeof(char), cudaMemcpyHostToDevice);
-	cudaMemcpy(d_pattern, pattern[i], size_pattern*sizeof(char), cudaMemcpyHostToDevice);
-		// à corriger
-	for(j=0; j<n_max/1024; j++){
-		cuda_levenshtein<<<1, 1024>>>(d_rcv_buf, d_pattern, size_pattern, d_result, n_max, j*1024);
-		gpuErrchk( cudaPeekAtLastError() );
-		gpuErrchk( cudaDeviceSynchronize() );
-	}
-	cuda_levenshtein<<<1, 1024>>>(d_rcv_buf, d_pattern, size_pattern, d_result, n_max, 1024*(n_max/1024));
-	gpuErrchk( cudaPeekAtLastError() );
-	gpuErrchk( cudaDeviceSynchronize() );
-	gpuErrchk(cudaMemcpy(result, d_result, n_max*sizeof(int), cudaMemcpyDeviceToHost));
-	cudaFree(d_rcv_buf);
-	cudaFree(d_pattern);
-	cudaFree(d_result);
-	printf("hello %d \n", result[0]);
-	int * column;
-	column=(int *) malloc((size_pattern+1)*sizeof(int));
+        result=(int *) malloc(sizeof(int)*n_max);
+        cudaMalloc((void **)&d_rcv_buf, n_bytes*sizeof(char));
+        cudaMalloc((void **)&d_pattern, size_pattern*sizeof(char));
+        cudaMalloc((void **)&d_result, n_max*sizeof(int));
+
+        cudaMemcpy(d_rcv_buf, buf, n_bytes*sizeof(char), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_pattern, pattern[i], size_pattern*sizeof(char), cudaMemcpyHostToDevice);
+
+        for(j=0; j<n_max/1024; j++){
+            cuda_levenshtein<<<1, 1024>>>(d_rcv_buf, d_pattern, size_pattern, d_result, n_max, j*1024);
+            gpuErrchk( cudaPeekAtLastError() );
+            gpuErrchk( cudaDeviceSynchronize() );
+        }
+
+        cuda_levenshtein<<<1, 1024>>>(d_rcv_buf, d_pattern, size_pattern, d_result, n_max, 1024*(n_max/1024));
+
+        gpuErrchk( cudaPeekAtLastError() );
+        gpuErrchk( cudaDeviceSynchronize() );
+        gpuErrchk(cudaMemcpy(result, d_result, n_max*sizeof(int), cudaMemcpyDeviceToHost));
+
+        cudaFree(d_rcv_buf);
+        cudaFree(d_pattern);
+        cudaFree(d_result);
+
+        int * column;
+        column=(int *) malloc((size_pattern+1)*sizeof(int));
         for ( j = 0 ; j < n_bytes ; j++ ) {
             int distance = 0 ;
             int s ;
@@ -277,7 +280,7 @@ int main(int argc, char ** argv) {
             printf( "Procesing byte %d (out of %d)\n", j, n_bytes ) ;
             }
 #endif
-	    
+
             s = size_pattern ;
             if ( n_bytes - j < size_pattern )
             {
@@ -292,6 +295,7 @@ int main(int argc, char ** argv) {
                 n_matches[i]++ ;
             }
         }
+
         printf("%d matches from %d\n", n_matches[0], rank);
         free( column );
     }
