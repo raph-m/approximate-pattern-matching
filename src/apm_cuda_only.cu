@@ -12,6 +12,16 @@
 
 #define APM_DEBUG 0
 
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
+{
+   if (code != cudaSuccess) 
+   {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      if (abort) exit(code);
+   }
+}
+
 char *read_input_file(char * filename, int * size) {
     char * buf ;
     off_t fsize;
@@ -73,7 +83,7 @@ void cuda_levenshtein(char *s1, char *s2, int len, int * result, int n_max) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (i<n_max){
-        int column[len];
+        int column[100];
         for (y = 1; y <= len; y++) {
             column[y] = y;
         }
@@ -88,7 +98,7 @@ void cuda_levenshtein(char *s1, char *s2, int len, int * result, int n_max) {
                 column[y] = MIN3(
                         column[y] + 1,
                         column[y-1] + 1,
-                        lastdiag + (s1[y-1] == s2[x-1+i] ? 0 : 1)
+                        lastdiag + (s1[y-1+i] == s2[x-1] ? 0 : 1)
                 );
                 lastdiag = olddiag;
             }
@@ -196,7 +206,6 @@ int main(int argc, char ** argv) {
 
         strncpy( pattern[i], argv[i+3], (l+1) ) ;
     }
-
     printf( "Approximate Pattern Mathing: "
                     "looking for %d pattern(s) in file %s w/ distance of %d\n",
             nb_patterns, filename, approx_factor );
@@ -222,38 +231,39 @@ int main(int argc, char ** argv) {
 
     /* Timer start */
     gettimeofday(&t1, NULL);
-
     max_pat=0;
-
     for(i=0; i<nb_patterns; i++){
         max_pat=max_pat>strlen(pattern[i]) ? max_pat : strlen(pattern[i]);
     }
-
+	printf("hello %d\n", n_bytes);
     for ( i = 0 ; i < nb_patterns ; i++ ) {
         int size_pattern = strlen(pattern[i]) ;
-
+		printf("hello\n");
         n_matches[i] = 0 ;
 
         char * d_rcv_buf;
         char * d_pattern;
         int * d_result;
-        int n_max = (chunk_size-size_pattern + 1);
+        int n_max = (n_bytes-size_pattern + 1);
         int result[n_max];
-
-        cudaMalloc((void **)&d_rcv_buf, chunk_size*sizeof(char));
+		cudaMalloc((void **)&d_rcv_buf, n_bytes*sizeof(char));
         cudaMalloc((void **)&d_pattern, size_pattern*sizeof(char));
         cudaMalloc((void **)&d_result, n_max*sizeof(int));
 
-        cudaMemcpy(d_rcv_buf, rcv_buf, chunk_size*sizeof(char), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_rcv_buf, buf, n_bytes*sizeof(char), cudaMemcpyHostToDevice);
         cudaMemcpy(d_pattern, pattern[i], size_pattern*sizeof(char), cudaMemcpyHostToDevice);
-
         // à corriger
-        cuda_levenshtein<<<1, n_max>>>(d_rcv_buf, d_pattern, size_pattern, d_result, n_max);
-
-        cudaMemcpy(result, d_result, n_max*sizeof(int), cudaMemcpyDeviceToHost);
-
-
-        for ( j = 0 ; j < chunk_size ; j++ ) {
+        cuda_levenshtein<<<1, 1024>>>(d_rcv_buf, d_pattern, size_pattern, d_result, n_max);
+		gpuErrchk( cudaPeekAtLastError() );
+		gpuErrchk( cudaDeviceSynchronize() );
+        gpuErrchk(cudaMemcpy(result, d_result, n_max*sizeof(int), cudaMemcpyDeviceToHost));
+		cudaFree(d_rcv_buf);
+		cudaFree(d_pattern);
+		cudaFree(d_result);
+		printf("hello %d \n", result[0]);
+		int * column;
+	    column=(int *) malloc((size_pattern+1)*sizeof(int));
+        for ( j = 0 ; j < n_bytes ; j++ ) {
             int distance = 0 ;
             int s ;
 
@@ -263,12 +273,12 @@ int main(int argc, char ** argv) {
             printf( "Procesing byte %d (out of %d)\n", j, n_bytes ) ;
             }
 #endif
-
+	    
             s = size_pattern ;
-            if ( chunk_size - j < size_pattern )
+            if ( n_bytes - j < size_pattern )
             {
-                s = chunk_size - j ;
-                distance = levenshtein( pattern[i], &rcv_buf[j], s, column )+size_pattern-s;
+                s = n_bytes - j ;
+                distance = levenshtein( pattern[i], &buf[j], s, column )+size_pattern-s;
             }
             else{
                 distance = result[j];
@@ -296,7 +306,7 @@ int main(int argc, char ** argv) {
     for ( i = 0 ; i < nb_patterns ; i++ )
     {
         printf( "Number of matches for pattern <%s>: %d\n",
-                pattern[i], rcv_matches[i] ) ;
+                pattern[i], n_matches[i] ) ;
     }
     return 0 ;
 }
