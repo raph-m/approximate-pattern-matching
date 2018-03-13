@@ -131,8 +131,8 @@ def compare_cuda_normal():
         time_cuda.append(time)
         assert results_cuda == results_normal
 
-    plt.scatter(sizes, results_normal, label="normal")
-    plt.scatter(sizes, results_cuda, label="cuda")
+    plt.scatter(sizes, time_normal, label="normal")
+    plt.scatter(sizes, time_cuda, label="cuda")
     plt.plot()
     plt.show()
 
