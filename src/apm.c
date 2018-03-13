@@ -98,8 +98,6 @@ int levenshtein(char *s1, char *s2, int len, int * column) {
 }
 
 
-
-
 int 
 main( int argc, char ** argv )
 {
@@ -193,8 +191,6 @@ main( int argc, char ** argv )
 
   for ( i = 0 ; i < nb_patterns ; i++ )
   {
-
-
 
       int size_pattern = strlen(pattern[i]) ;
 
