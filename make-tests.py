@@ -118,7 +118,6 @@ def get_results(script, file_, patterns, N, n, approx):
     command = command.split(" ")
 
     ans = subprocess.check_output(command).decode()
-
     results = [get_result(ans, p) for p in patterns]
     time = get_time(ans)
 
@@ -146,22 +145,27 @@ def compare_cuda_normal():
 
 def pattern_parallelism(N=1, n=4, approx=3):
     alphabet = ['A', 'G', 'C', 'T']
-    n_inf = 15
+    n_inf = 25
     patterns = []
     for i in range(n_inf):
-        x = random.randint(2, 15)
+        x = random.randint(2, 7)
         current = "".join(np.random.choice(alphabet, x, replace=True))
         patterns.append(current)
 
-    # TODO: trier les patterns avant de les envoyer au C !
+	lens = [len(p) for p in patterns]
+	indexes = np.argsort(lens)
+	indexes = indexes[::-1]
+	patterns2 = np.array(patterns)
+	patterns2 = patterns2[indexes]
+
     speedups = []
     for i in range(1, n_inf):
         print("i:")
         print(i)
         print("current patterns:")
-        print(patterns[:i])
-        time0, _ = get_results("patterns", my_file_1["name"], patterns[:i], N, n, approx)
-        time1, _ = get_results("normal", my_file_1["name"], patterns[:i], N, n, approx)
+        print(patterns2[:i])
+        time0, _ = get_results("patterns", my_file_1["name"], patterns2[:i], N, n, approx)
+        time1, _ = get_results("normal", my_file_1["name"], patterns2[:i], N, n, approx)
         print("time0")
         print(time0)
         print("time1")
@@ -188,7 +192,12 @@ def speedup_ideal_patterns():
     approx = 3
 
     time0, _ = get_results("patterns", my_file_1["name"], patterns, N, n, approx)
+    print("time0")
+    print(time0)
     time1, _ = get_results("normal", my_file_1["name"], patterns, N, n, approx)
+    print("time1")
+    print(time1)
+
 
 compile_everything()
-speedup_ideal_patterns()
+pattern_parallelism()
