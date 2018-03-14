@@ -81,6 +81,7 @@ def compile_everything():
         "mpi_openmp": "mpicc -fopenmp -o apm_omp src/apm_omp.c",
         "cuda_only": "/usr/local/cuda-9.0/bin/nvcc -o apm_cuda_only src/apm_cuda_only.cu",
         "patterns": "mpicc -o apm_par src/apm_par.c",
+        "mpi_cuda": "/usr/local/cuda-9.0/bin/nvcc -I$MPI_ROOT/include -L$MPI_ROOT/lib -lmpi -o apm_mpi_cuda src/apm_mpi_cuda.cu",
     }
 
     for k, v in commands.items():
@@ -111,6 +112,8 @@ def get_results(script, file_, patterns, N, n, approx):
         command = "salloc -N " + str(N) + " -n " + str(n) + " mpirun ./apm_omp "
     if script == "cuda_only":
         command = "./apm_cuda_only "
+    if script == "mpi_cuda":
+        command = "salloc -N " + str(N) + " -n " + str(n) + " mpirun ./apm_mpi_cuda "
     if script == "patterns":
         command = "salloc -N " + str(N) + " -n " + str(n) + " mpirun ./apm_par "
 
@@ -197,6 +200,10 @@ def speedup_ideal_patterns():
     time1, _ = get_results("normal", my_file_1["name"], patterns, N, n, approx)
     print("time1")
     print(time1)
+
+
+def test_mpi_solo():
+    pass
 
 
 compile_everything()
