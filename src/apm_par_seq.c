@@ -220,7 +220,8 @@ int main(int argc, char ** argv) {
 	displs[size-1]=step*(size-1);
 	scounts[size-1]=step+n_bytes%(size);
 
-	char rcv_buf[step+max_pat-1+n_bytes%size] ;
+	char * rcv_buf;
+	rcv_buf = (char *) malloc((step+max_pat-1+n_bytes%size) * sizeof(char)) ;
 
 	MPI_Scatterv(buf, scounts, displs, MPI_CHAR, rcv_buf, step+max_pat-1+n_bytes%size, MPI_CHAR, 0, MPI_COMM_WORLD);
 
@@ -281,7 +282,10 @@ int main(int argc, char ** argv) {
 
     duration = (t2.tv_sec -t1.tv_sec)+((t2.tv_usec-t1.tv_usec)/1e6);
 
-    printf( "APM done in %lf s\n", duration ) ;
+	if (rank==0){
+    	printf( "APM done in %lf s\n", duration ) ;
+	}
+
 
     /*****
     *    * END MAIN LOOP
