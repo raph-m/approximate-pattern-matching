@@ -60,7 +60,7 @@ def get_time(ans):
 
 
 def get_result(ans, pattern):
-    look_for = "<" + pattern + ">: "
+    look_for = "<\"" + pattern + "\">: "
     n = len(look_for)
     n_matches = ""
     for i in range(len(ans)):
