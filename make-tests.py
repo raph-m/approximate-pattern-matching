@@ -145,10 +145,10 @@ def compare_cuda_normal():
 
 
 def pattern_parallelism(N=4, n=4):
-	alphabet = ['A', 'G', 'C', 'T']
-	n_inf = 10
-	patterns = []
-	for i in range(n_inf):
+    alphabet = ['A', 'G', 'C', 'T']
+    n_inf = 10
+    patterns = []
+    for i in range(n_inf):
         n = random.randint(5, 30)
         current = "".join(np.random.choice(alphabet, n, replace=True))
         patterns.append(current)
