@@ -1,5 +1,7 @@
 import subprocess
 import matplotlib.pyplot as plt
+import random
+import numpy as np
 
 my_file_0 = {
     "name": "chr1_KI270710v1_random.fa",
@@ -37,7 +39,8 @@ run_commands = {
     "normal": "",
     "mpi_only": "mpicc -o apm_par_seq src/apm_par_seq.c",
     "mpi_openmp": "mpicc -fopenmp -o apm_omp src/apm_omp.c",
-    "cuda_only": "/usr/local/cuda-9.0/bin/nvcc -o apm_cuda_only src/apm_cuda_only.cu"
+    "cuda_only": "/usr/local/cuda-9.0/bin/nvcc -o apm_cuda_only src/apm_cuda_only.cu",
+    "patterns": "mpicc -o apm_par src/apm_par.c",
 }
 
 
@@ -76,7 +79,8 @@ def compile_everything():
         "normal": "gcc -o apm src/apm.c",
         "mpi_only": "mpicc -o apm_par_seq src/apm_par_seq.c",
         "mpi_openmp": "mpicc -fopenmp -o apm_omp src/apm_omp.c",
-        "cuda_only": "/usr/local/cuda-9.0/bin/nvcc -o apm_cuda_only src/apm_cuda_only.cu"
+        "cuda_only": "/usr/local/cuda-9.0/bin/nvcc -o apm_cuda_only src/apm_cuda_only.cu",
+        "mpi_only": "mpicc -o apm_par src/apm_par.c",
     }
 
     for k, v in commands.items():
@@ -86,6 +90,7 @@ def compile_everything():
             print("compiling went ok")
         else:
             print("compiling fucked up")
+
 
 def args(file, patterns, approx):
     command = str(approx) + " " + file
@@ -106,6 +111,8 @@ def get_results(script, file, patterns, approx=3, N=1, n=1):
         command = "salloc -N " + str(N) + " -n " + str(n) + " mpirun ./apm_omp "
     if script == "cuda_only":
         command = "./apm_cuda_only "
+    if script == "patterns":
+        command = "salloc -N " + str(N) + " -n " + str(n) + " mpirun ./apm_par "
 
     command += args(file, patterns, approx)
     command = command.split(" ")
@@ -137,4 +144,29 @@ def compare_cuda_normal():
     plt.show()
 
 
+def pattern_parallelism(N=4, n=4):
+    alphabet = ['A', 'G', 'C', 'T']
+
+    patterns = []
+    for i in range(100):
+        n = random.randint(5, 30)
+        current = "".join(np.random.choice(alphabet, n, replace=True))
+        patterns.append(current)
+
+    # TODO: trier les patterns avant de les envoyer au C !
+    speedups = []
+    for i in range(100):
+        time0, _ = get_results("patterns", my_file_2["name"], patterns)
+        time1, _ = get_results("normal", my_file_2["name"], patterns)
+        speedups.append(time1/time0)
+
+    plt.plot(range(100), speedups)
+    plt.plot(range(100), np.ones(100))
+    plt.plot(range(100), np.ones(100)*n)
+    plt.title("N = "+str(N)+", n = "+str(n))
+    plt.xlabel("number of patterns")
+    plt.ylabel("speedup")
+    plt.show()
+
+pattern_parallelism()
 

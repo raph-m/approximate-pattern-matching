@@ -99,7 +99,7 @@ int main(int argc, char ** argv) {
     char * filename ;
     int approx_factor = 0 ;
     int nb_patterns = 0 ;
-    int i, j ;
+    int i, j, u, v, w;
     char * buf ;
     struct timeval t1, t2;
     double duration ;
@@ -131,6 +131,7 @@ int main(int argc, char ** argv) {
     /* Fill the pattern array */
     pattern = (char **)malloc( nb_patterns * sizeof( char * ) ) ;
     chunk_size=nb_patterns/(size-1);
+
 
     if (pattern == NULL) {
         fprintf(
@@ -165,6 +166,35 @@ int main(int argc, char ** argv) {
         nb_patterns, filename, approx_factor );
     }
 
+    int current_rank_to_fill;
+    int best_complexity;
+    int best_index;
+    int current_complexity;
+    int patterns_ranks[nb_patterns];
+
+    for (i=0; i<nb_patterns; i++){
+        patterns_ranks[i] = -1;
+    }
+
+    for (i=0; i<nb_patterns; i++){
+        best_complexity = 1000000;
+        best_rank = 0;
+        current_complexity = 0;
+        for (j=0; j<size; j++){
+            for (u=0; u<i; u++){
+                if (patterns_ranks[u] == j){
+                    current_complexity = current_complexity + strlen(pattern[u])*strlen(pattern[u]);
+                }
+            }
+            if (current_complexity < best_complexity){
+                best_complexity = current_complexity;
+                best_rank = j;
+            }
+        }
+        patterns_ranks[i] = best_rank;
+    }
+
+
     buf = read_input_file( filename, &n_bytes ) ;
     if ( buf == NULL ) {
         return 1 ;
@@ -193,7 +223,7 @@ int main(int argc, char ** argv) {
     }
     for ( i = 0 ; i < nb_patterns ; i++ ) {
 
-        if(rank==i/chunk_size){
+        if(patterns_ranks[i]==rank){
 
             int size_pattern = strlen(pattern[i]) ;
 
