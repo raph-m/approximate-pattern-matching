@@ -100,7 +100,7 @@ def args(file, patterns, approx):
     return command
 
 
-def get_results(script, file, patterns, approx=3, N=1, n=1):
+def get_results(script, file, patterns, N, n, approx):
 
     command = ""
     if script == "normal":
@@ -144,7 +144,7 @@ def compare_cuda_normal():
     plt.show()
 
 
-def pattern_parallelism(N=4, n=4):
+def pattern_parallelism(N=4, n=4, approx=3):
     alphabet = ['A', 'G', 'C', 'T']
     n_inf = 10
     patterns = []
@@ -156,8 +156,8 @@ def pattern_parallelism(N=4, n=4):
     # TODO: trier les patterns avant de les envoyer au C !
     speedups = []
     for i in range(4, n_inf):
-        time0, _ = get_results("patterns", my_file_0["name"], patterns[:i])
-        time1, _ = get_results("normal", my_file_0["name"], patterns[:i])
+        time0, _ = get_results("patterns", my_file_0["name"], patterns[:i], N, n, approx)
+        time1, _ = get_results("normal", my_file_0["name"], patterns[:i], N, n, approx)
         speedups.append(time1/time0)
 
     plt.plot(range(n_inf), speedups)
