@@ -100,7 +100,7 @@ def args(file, patterns, approx):
     return command
 
 
-def get_results(script, file, patterns, N, n, approx):
+def get_results(script, file_, patterns, N, n, approx):
 
     command = ""
     if script == "normal":
@@ -114,7 +114,7 @@ def get_results(script, file, patterns, N, n, approx):
     if script == "patterns":
         command = "salloc -N " + str(N) + " -n " + str(n) + " mpirun ./apm_par "
 
-    command += args(file, patterns, approx)
+    command += args(file_, patterns, approx)
     command = command.split(" ")
 
     ans = subprocess.check_output(command).decode()
@@ -146,18 +146,26 @@ def compare_cuda_normal():
 
 def pattern_parallelism(N=1, n=4, approx=3):
     alphabet = ['A', 'G', 'C', 'T']
-    n_inf = 10
+    n_inf = 15
     patterns = []
     for i in range(n_inf):
-        n = random.randint(5, 30)
-        current = "".join(np.random.choice(alphabet, n, replace=True))
+        x = random.randint(2, 15)
+        current = "".join(np.random.choice(alphabet, x, replace=True))
         patterns.append(current)
 
     # TODO: trier les patterns avant de les envoyer au C !
     speedups = []
     for i in range(1, n_inf):
-        time0, _ = get_results("patterns", my_file_2["name"], patterns[:i], N, n, approx)
-        time1, _ = get_results("normal", my_file_2["name"], patterns[:i], N, n, approx)
+	print("i:")
+	print(i)
+	print("current patterns:")
+	print(patterns[:i])
+        time0, _ = get_results("patterns", my_file_1["name"], patterns[:i], N, n, approx)
+        time1, _ = get_results("normal", my_file_1["name"], patterns[:i], N, n, approx)
+	print("time0")
+	print(time0)
+	print("time1")
+	print(time1)
         speedups.append(time1/time0)
 
     plt.plot(range(1, n_inf), speedups)
