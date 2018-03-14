@@ -4,25 +4,25 @@ import random
 import numpy as np
 
 my_file_0 = {
-    "name": "chr1_KI270710v1_random.fa",
+    "name": "dna/chr1_KI270710v1_random.fa",
     "size": 41,
     "nickname": "small"
 }
 
 my_file_1 = {
-    "name": "chr6_GL000250v2_alt.fa",
+    "name": "dna/chr6_GL000250v2_alt.fa",
     "size": 4800,
     "nickname": "medium"
 }
 
 my_file_2 = {
-    "name": "chrY.fa",
+    "name": "dna/chrY.fa",
     "size": 58400,
     "nickname": "big"
 }
 
 my_file_3 = {
-    "name": "chr6.fa",
+    "name": "dna/chr6.fa",
     "size": 174200,
     "nickname": "huge"
 }
@@ -80,7 +80,7 @@ def compile_everything():
         "mpi_only": "mpicc -o apm_par_seq src/apm_par_seq.c",
         "mpi_openmp": "mpicc -fopenmp -o apm_omp src/apm_omp.c",
         "cuda_only": "/usr/local/cuda-9.0/bin/nvcc -o apm_cuda_only src/apm_cuda_only.cu",
-        "mpi_only": "mpicc -o apm_par src/apm_par.c",
+        "patterns": "mpicc -o apm_par src/apm_par.c",
     }
 
     for k, v in commands.items():
@@ -145,28 +145,29 @@ def compare_cuda_normal():
 
 
 def pattern_parallelism(N=4, n=4):
-    alphabet = ['A', 'G', 'C', 'T']
-
-    patterns = []
-    for i in range(100):
+	alphabet = ['A', 'G', 'C', 'T']
+	n_inf = 10
+	patterns = []
+	for i in range(n_inf):
         n = random.randint(5, 30)
         current = "".join(np.random.choice(alphabet, n, replace=True))
         patterns.append(current)
 
     # TODO: trier les patterns avant de les envoyer au C !
     speedups = []
-    for i in range(100):
-        time0, _ = get_results("patterns", my_file_2["name"], patterns)
-        time1, _ = get_results("normal", my_file_2["name"], patterns)
+    for i in range(4, n_inf):
+        time0, _ = get_results("patterns", my_file_0["name"], patterns[:i])
+        time1, _ = get_results("normal", my_file_0["name"], patterns[:i])
         speedups.append(time1/time0)
 
-    plt.plot(range(100), speedups)
-    plt.plot(range(100), np.ones(100))
-    plt.plot(range(100), np.ones(100)*n)
+    plt.plot(range(n_inf), speedups)
+    plt.plot(range(n_inf), np.ones(n_inf))
+    plt.plot(range(n_inf), np.ones(n_inf)*n)
     plt.title("N = "+str(N)+", n = "+str(n))
     plt.xlabel("number of patterns")
     plt.ylabel("speedup")
     plt.show()
 
+compile_everything()
 pattern_parallelism()
 

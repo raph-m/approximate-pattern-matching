@@ -106,7 +106,7 @@ int main(int argc, char ** argv) {
     int * n_matches ;
     int n_bytes ;
     int rank;
-    int size;
+    int size, s;
     int chunk_size;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -171,7 +171,8 @@ int main(int argc, char ** argv) {
     int best_index;
     int current_complexity;
     int patterns_ranks[nb_patterns];
-
+	int best_rank;
+	
     for (i=0; i<nb_patterns; i++){
         patterns_ranks[i] = -1;
     }
@@ -193,6 +194,8 @@ int main(int argc, char ** argv) {
         }
         patterns_ranks[i] = best_rank;
     }
+
+	printf("patterns inititialized, rank %d \n", rank);
 
 
     buf = read_input_file( filename, &n_bytes ) ;
@@ -250,12 +253,12 @@ int main(int argc, char ** argv) {
                 }
     #endif
 
-                size = size_pattern ;
+                s = size_pattern ;
                 if (n_bytes - j < size_pattern) {
-                    size = n_bytes - j ;
+                    s = n_bytes - j ;
                 }
 
-                distance = levenshtein(pattern[i], &buf[j], size, column) ;
+                distance = levenshtein(pattern[i], &buf[j], s, column)+size_pattern-s;
 
                 if (distance <= approx_factor) {
                     matches++ ;
@@ -273,8 +276,10 @@ int main(int argc, char ** argv) {
     }
 
     if (rank == 0) {
-        for (i = chunk_size; i < nb_patterns; i++){
-            MPI_Recv(&n_matches[i], 1, MPI_INTEGER, i/chunk_size, i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        for (i = 0; i < nb_patterns; i++){
+			if (patterns_ranks[i] != 0){
+ 	           MPI_Recv(&n_matches[i], 1, MPI_INTEGER, patterns_ranks[i], i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+}
         }
     }
 
