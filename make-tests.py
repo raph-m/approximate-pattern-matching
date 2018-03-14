@@ -204,8 +204,30 @@ def speedup_ideal_patterns():
     print(time1)
 
 
-def test_mpi_solo():
-    pass
+def test_mpi_only():
+
+    sizes = []
+    speedup = []
+    patterns = ["AATTGGCC"]
+    N = 1
+    n = 4
+    approx = 3
+
+    for f in my_files:
+        print(f["name"])
+        time0, _ = get_results("normal", f["name"], patterns, N, n, approx)
+        time1, _ = get_results("mpi_only", f["name"], patterns, N, n, approx)
+        print(time0)
+        print(time1)
+        speedup.append(time0/time1)
+        sizes.append(f["size"])
+
+    plt.plot(sizes, speedup)
+    plt.plot(sizes, np.ones(len(sizes))*n)
+    plt.title("N = "+str(N)+", n = "+str(n))
+    plt.xlabel("size of file")
+    plt.ylabel("speedup")
+    plt.show()
 
 
 compile_everything()
