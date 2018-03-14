@@ -117,13 +117,7 @@ def get_results(script, file, patterns, N, n, approx):
     command += args(file, patterns, approx)
     command = command.split(" ")
 
-    print("command:")
-    print(command)
-
     ans = subprocess.check_output(command).decode()
-
-    print("ans:")
-    print(ans)
 
     results = [get_result(ans, p) for p in patterns]
     time = get_time(ans)
@@ -150,7 +144,7 @@ def compare_cuda_normal():
     plt.show()
 
 
-def pattern_parallelism(N=4, n=4, approx=3):
+def pattern_parallelism(N=1, n=4, approx=3):
     alphabet = ['A', 'G', 'C', 'T']
     n_inf = 10
     patterns = []
@@ -162,8 +156,8 @@ def pattern_parallelism(N=4, n=4, approx=3):
     # TODO: trier les patterns avant de les envoyer au C !
     speedups = []
     for i in range(1, n_inf):
-        time0, _ = get_results("patterns", my_file_0["name"], patterns[:i], N, n, approx)
-        time1, _ = get_results("normal", my_file_0["name"], patterns[:i], N, n, approx)
+        time0, _ = get_results("patterns", my_file_2["name"], patterns[:i], N, n, approx)
+        time1, _ = get_results("normal", my_file_2["name"], patterns[:i], N, n, approx)
         speedups.append(time1/time0)
 
     plt.plot(range(1, n_inf), speedups)
@@ -173,12 +167,6 @@ def pattern_parallelism(N=4, n=4, approx=3):
     plt.xlabel("number of patterns")
     plt.ylabel("speedup")
     plt.show()
-
-
-def test_patterns(N=4, n=4, approx=3):
-    patterns = ["ATT", "AGCC"]
-    time0, _ = get_results("patterns", my_file_0["name"], patterns, N, n, approx)
-    time1, _ = get_results("normal", my_file_0["name"], patterns, N, n, approx)
 
 compile_everything()
 pattern_parallelism()
