@@ -99,14 +99,14 @@ int main(int argc, char ** argv) {
     char * filename ;
     int approx_factor = 0 ;
     int nb_patterns = 0 ;
-    int i, j ;
+    int i, j, u, v, w;
     char * buf ;
     struct timeval t1, t2;
     double duration ;
     int * n_matches ;
     int n_bytes ;
     int rank;
-    int size;
+    int size, s;
     int chunk_size;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -131,6 +131,7 @@ int main(int argc, char ** argv) {
     /* Fill the pattern array */
     pattern = (char **)malloc( nb_patterns * sizeof( char * ) ) ;
     chunk_size=nb_patterns/(size-1);
+
 
     if (pattern == NULL) {
         fprintf(
@@ -165,6 +166,38 @@ int main(int argc, char ** argv) {
         nb_patterns, filename, approx_factor );
     }
 
+    int current_rank_to_fill;
+    int best_complexity;
+    int best_index;
+    int current_complexity;
+    int patterns_ranks[nb_patterns];
+	int best_rank;
+	
+    for (i=0; i<nb_patterns; i++){
+        patterns_ranks[i] = -1;
+    }
+
+    for (i=0; i<nb_patterns; i++){
+        best_complexity = 1000000;
+        best_rank = 0;
+        current_complexity = 0;
+        for (j=0; j<size; j++){
+            for (u=0; u<i; u++){
+                if (patterns_ranks[u] == j){
+                    current_complexity = current_complexity + strlen(pattern[u])*strlen(pattern[u]);
+                }
+            }
+            if (current_complexity < best_complexity){
+                best_complexity = current_complexity;
+                best_rank = j;
+            }
+        }
+        patterns_ranks[i] = best_rank;
+    }
+
+	printf("patterns inititialized, rank %d \n", rank);
+
+
     buf = read_input_file( filename, &n_bytes ) ;
     if ( buf == NULL ) {
         return 1 ;
@@ -193,7 +226,7 @@ int main(int argc, char ** argv) {
     }
     for ( i = 0 ; i < nb_patterns ; i++ ) {
 
-        if(rank==i/chunk_size){
+        if(patterns_ranks[i]==rank){
 
             int size_pattern = strlen(pattern[i]) ;
 
@@ -220,12 +253,12 @@ int main(int argc, char ** argv) {
                 }
     #endif
 
-                size = size_pattern ;
+                s = size_pattern ;
                 if (n_bytes - j < size_pattern) {
-                    size = n_bytes - j ;
+                    s = n_bytes - j ;
                 }
 
-                distance = levenshtein(pattern[i], &buf[j], size, column) ;
+                distance = levenshtein(pattern[i], &buf[j], s, column)+size_pattern-s;
 
                 if (distance <= approx_factor) {
                     matches++ ;
@@ -243,8 +276,10 @@ int main(int argc, char ** argv) {
     }
 
     if (rank == 0) {
-        for (i = chunk_size; i < nb_patterns; i++){
-            MPI_Recv(&n_matches[i], 1, MPI_INTEGER, i/chunk_size, i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        for (i = 0; i < nb_patterns; i++){
+			if (patterns_ranks[i] != 0){
+ 	           MPI_Recv(&n_matches[i], 1, MPI_INTEGER, patterns_ranks[i], i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+}
         }
     }
 

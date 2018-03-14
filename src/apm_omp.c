@@ -231,60 +231,75 @@ int main(int argc, char ** argv) {
     for ( i = 0 ; i < nb_patterns ; i++ ) {
         int size_pattern = strlen(pattern[i]) ;
 
-        //int * column ;
-
         n_matches[i] = 0 ;
 
-        //column = (int *)malloc( (size_pattern+1) * sizeof( int ) ) ;
-        /*if ( column == NULL )
-        {
-          fprintf( stderr, "Error: unable to allocate memory for column (%ldB)\n",
-                  (size_pattern+1) * sizeof( int ) ) ;
-          return 1 ;
-        }*/
+		int my_sum=0;
         if (rank!=size-1) {
-            chunk_size=step+size_pattern-1;
+            chunk_size=step;
+			#pragma omp parallel
+			{	
+				#pragma omp for schedule(dynamic) reduction(+:my_sum)
+				for ( j = 0 ; j < chunk_size ; j++ ) {
+					int * column ;
+					column = (int *)malloc( (size_pattern+1) * sizeof( int ) ) ;
+				    int distance = 0;
+				    int s ;
+				    #if APM_DEBUG
+				    if ( j % 100 == 0 )
+				    {
+				    printf( "Procesing byte %d (out of %d)\n", j, n_bytes ) ;
+				    }
+				    #endif
+
+				    distance = levenshtein( pattern[i], &rcv_buf[j], size_pattern, column );
+
+				    if ( distance <= approx_factor ) {
+				      		my_sum++ ;
+					}
+					free( column );
+				}
+			}
+
         }
         else {
             chunk_size=step+n_bytes%(size);
-        }
-int my_sum=0;
-#pragma omp parallel
-{
-	#pragma omp for schedule(dynamic) reduction(+:my_sum)
-        for ( j = 0 ; j < chunk_size ; j++ ) {
-			int * column ;
-			column = (int *)malloc( (size_pattern+1) * sizeof( int ) ) ;
-            int distance = 0 ;
-            int s ;
-            #if APM_DEBUG
-            if ( j % 100 == 0 )
-            {
-            printf( "Procesing byte %d (out of %d)\n", j, n_bytes ) ;
-            }
-            #endif
+			#pragma omp parallel
+			{	
+				#pragma omp for schedule(dynamic) reduction(+:my_sum)
+				for ( j = 0 ; j < chunk_size ; j++ ) {
+					int * column ;
+					column = (int *)malloc( (size_pattern+1) * sizeof( int ) ) ;
+				    int distance = 0 ;
+				    int s ;
+				    #if APM_DEBUG
+				    if ( j % 100 == 0 )
+				    {
+				    printf( "Procesing byte %d (out of %d)\n", j, n_bytes ) ;
+				    }
+				    #endif
 
-            s = size_pattern ;
-            if ( chunk_size - j < size_pattern )
-            {
-              s = chunk_size - j ;
-            }
-            distance = levenshtein( pattern[i], &rcv_buf[j], s, column )+size_pattern-s ;
+				    s = size_pattern ;
+				    if ( chunk_size - j < size_pattern )
+				    {
+				      s = chunk_size - j ;
+				    }
+				    distance = levenshtein( pattern[i], &rcv_buf[j], s, column )+size_pattern-s ;
 
-            if ( distance <= approx_factor ) {
-              		my_sum++ ;
+				    if ( distance <= approx_factor ) {
+				      		my_sum++ ;
+					}
+					free( column );
+				}
 			}
-			free( column );
         }
-}
 		n_matches[i]=my_sum;
-        printf("%d matches from %d\n", n_matches[i], rank);
-        //free( column );
+	    printf("%d matches from %d\n", n_matches[i], rank);
     }
 
     int rcv_matches[nb_patterns] ;
 
     MPI_Reduce(n_matches, rcv_matches, nb_patterns, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+
     /* Timer stop */
     gettimeofday(&t2, NULL);
 	MPI_Barrier(MPI_COMM_WORLD);
