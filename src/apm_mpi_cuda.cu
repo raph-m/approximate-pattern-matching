@@ -268,7 +268,6 @@ int main(int argc, char ** argv) {
 
 	MPI_Scatterv(buf, scounts, displs, MPI_CHAR, rcv_buf, step+max_pat-1+n_bytes%size, MPI_CHAR, 0, MPI_COMM_WORLD);
 
-	printf("hello %d\n", n_bytes);
     for ( i = 0 ; i < nb_patterns ; i++ ) {
         int size_pattern = strlen(pattern[i]) ;
         n_matches[i] = 0 ;
@@ -297,10 +296,18 @@ int main(int argc, char ** argv) {
 	cudaFree(d_rcv_buf);
 	cudaFree(d_pattern);
 	cudaFree(d_result);
-	printf("hello %d \n", result[0]);
 	int * column;
 	column=(int *) malloc((size_pattern+1)*sizeof(int));
-        for ( j = 0 ; j < n_bytes ; j++ ) {
+	int s_loop;
+	if(rank!=size-1){
+		s_loop=scounts[rank]-max_pat+1;
+	}
+	else{
+		s_loop=scounts[rank];
+	}
+	
+
+        for ( j = 0 ; j < s_loop; j++ ) {
             int distance = 0 ;
             int s ;
 
@@ -312,10 +319,10 @@ int main(int argc, char ** argv) {
 #endif
 	    
             s = size_pattern ;
-            if ( n_bytes - j < size_pattern )
+            if ( scounts[rank] - j < size_pattern )
             {
-                s = n_bytes - j ;
-                distance = levenshtein( pattern[i], &buf[j], s, column )+size_pattern-s;
+                s = scounts[rank] - j ;
+                distance = levenshtein( pattern[i], &rcv_buf[j], s, column )+size_pattern-s;
             }
             else{
                 distance = result[j];
