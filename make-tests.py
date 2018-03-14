@@ -156,16 +156,16 @@ def pattern_parallelism(N=1, n=4, approx=3):
     # TODO: trier les patterns avant de les envoyer au C !
     speedups = []
     for i in range(1, n_inf):
-	print("i:")
-	print(i)
-	print("current patterns:")
-	print(patterns[:i])
+        print("i:")
+        print(i)
+        print("current patterns:")
+        print(patterns[:i])
         time0, _ = get_results("patterns", my_file_1["name"], patterns[:i], N, n, approx)
         time1, _ = get_results("normal", my_file_1["name"], patterns[:i], N, n, approx)
-	print("time0")
-	print(time0)
-	print("time1")
-	print(time1)
+        print("time0")
+        print(time0)
+        print("time1")
+        print(time1)
         speedups.append(time1/time0)
 
     plt.plot(range(1, n_inf), speedups)
@@ -176,6 +176,19 @@ def pattern_parallelism(N=1, n=4, approx=3):
     plt.ylabel("speedup")
     plt.show()
 
-compile_everything()
-pattern_parallelism()
+def speedup_ideal_patterns():
+    patterns = [
+        "AAAAAAA",
+        "TTTTTTT",
+        "GGGGGGG",
+        "CCCCCCC"
+    ]
+    N = 1
+    n = 4
+    approx = 3
 
+    time0, _ = get_results("patterns", my_file_1["name"], patterns, N, n, approx)
+    time1, _ = get_results("normal", my_file_1["name"], patterns, N, n, approx)
+
+compile_everything()
+speedup_ideal_patterns()
