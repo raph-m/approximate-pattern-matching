@@ -180,9 +180,9 @@ int main(int argc, char ** argv) {
     for (i=0; i<nb_patterns; i++){
         best_complexity = 1000000;
         best_rank = 0;
-        current_complexity = 0;
         for (j=0; j<size; j++){
-            for (u=0; u<i; u++){
+        	current_complexity = 0;
+            for (u=0; u<nb_patterns; u++){
                 if (patterns_ranks[u] == j){
                     current_complexity = current_complexity + strlen(pattern[u])*strlen(pattern[u]);
                 }
@@ -194,8 +194,12 @@ int main(int argc, char ** argv) {
         }
         patterns_ranks[i] = best_rank;
     }
-
-	printf("patterns inititialized, rank %d \n", rank);
+	
+	if (rank == 0){
+		for (i=0; i<nb_patterns; i++){
+			printf("pattern %d was attributed to rank %d \n", i, patterns_ranks[i]);
+		}
+	}
 
 
     buf = read_input_file( filename, &n_bytes ) ;
