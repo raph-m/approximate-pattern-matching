@@ -231,4 +231,4 @@ def test_mpi_only():
 
 
 compile_everything()
-pattern_parallelism()
+test_mpi_only()
