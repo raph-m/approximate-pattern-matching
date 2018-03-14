@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import random
 import numpy as np
 
+MPI_ROOT = "/users/profs/2017/francois.trahay/soft/install/openmpi/"
+
 my_file_0 = {
     "name": "dna/chr1_KI270710v1_random.fa",
     "size": 41,
@@ -81,7 +83,7 @@ def compile_everything():
         "mpi_openmp": "mpicc -fopenmp -o apm_omp src/apm_omp.c",
         "cuda_only": "/usr/local/cuda-9.0/bin/nvcc -o apm_cuda_only src/apm_cuda_only.cu",
         "patterns": "mpicc -o apm_par src/apm_par.c",
-        "mpi_cuda": "/usr/local/cuda-9.0/bin/nvcc -I$MPI_ROOT/include -L$MPI_ROOT/lib -lmpi -o apm_mpi_cuda src/apm_mpi_cuda.cu",
+        "mpi_cuda": "/usr/local/cuda-9.0/bin/nvcc -I" + MPI_ROOT + "/include -L" + MPI_ROOT + "/lib -lmpi -o apm_mpi_cuda src/apm_mpi_cuda.cu",
     }
 
     for k, v in commands.items():
