@@ -161,14 +161,14 @@ def pattern_parallelism(N=4, n=4, approx=3):
 
     # TODO: trier les patterns avant de les envoyer au C !
     speedups = []
-    for i in range(n_inf):
+    for i in range(1, n_inf):
         time0, _ = get_results("patterns", my_file_0["name"], patterns[:i], N, n, approx)
         time1, _ = get_results("normal", my_file_0["name"], patterns[:i], N, n, approx)
         speedups.append(time1/time0)
 
-    plt.plot(range(n_inf), speedups)
-    plt.plot(range(n_inf), np.ones(n_inf))
-    plt.plot(range(n_inf), np.ones(n_inf)*n)
+    plt.plot(range(1, n_inf), speedups)
+    plt.plot(range(1, n_inf), np.ones(n_inf-1))
+    plt.plot(range(1, n_inf), np.ones(n_inf-1)*n)
     plt.title("N = "+str(N)+", n = "+str(n))
     plt.xlabel("number of patterns")
     plt.ylabel("speedup")
