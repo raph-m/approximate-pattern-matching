@@ -45,6 +45,14 @@ run_commands = {
     "patterns": "mpicc -o apm_par src/apm_par.c",
 }
 
+one_pattern = ["ATGCATGC"]
+four_patterns = [
+    "ATGCATGC",
+    "ATTTGAAA",
+    "AXXTGATT",
+    "AGGTGAAA",
+]
+
 
 def get_time(ans):
     look_for = "APM done in "
@@ -103,7 +111,7 @@ def args(file, patterns, approx):
     return command
 
 
-def get_results(script, file_, patterns, N, n, approx):
+def get_results(script, file_, patterns, N=1, n=4, approx=3):
 
     command = ""
     if script == "normal":
@@ -205,25 +213,118 @@ def speedup_ideal_patterns():
 
 
 def test_mpi_only():
-
-    sizes = []
-    speedup = []
-    patterns = ["AATTGGCC"]
     N = 1
     n = 4
     approx = 3
 
+    sizes = []
+    speedup = []
+    patterns = one_pattern
+    print("computing for 1 pattern:")
     for f in my_files:
         print(f["name"])
-        time0, _ = get_results("normal", f["name"], patterns, N, n, approx)
-        time1, _ = get_results("mpi_only", f["name"], patterns, N, n, approx)
+        time0, r0 = get_results("normal", f["name"], patterns, N, n, approx)
+        time1, r1 = get_results("mpi_only", f["name"], patterns, N, n, approx)
+        print(r0==r1)
         print(time0)
         print(time1)
         speedup.append(time0/time1)
         sizes.append(f["size"])
 
-    plt.plot(sizes, speedup)
+    plt.scatter(sizes, speedup, label="with 1 pattern")
     plt.plot(sizes, np.ones(len(sizes))*n)
+
+
+    sizes = []
+    speedup = []
+    patterns = four_patterns
+    print("computing for 1 pattern:")
+    for f in my_files:
+        print(f["name"])
+        time0, r0 = get_results("normal", f["name"], patterns, N, n, approx)
+        time1, r1 = get_results("mpi_only", f["name"], patterns, N, n, approx)
+        print(r0==r1)
+        print(time0)
+        print(time1)
+        speedup.append(time0/time1)
+        sizes.append(f["size"])
+
+    plt.scatter(sizes, speedup, label="with 4 patterns")
+    plt.plot(sizes, np.ones(len(sizes))*n)
+
+    plt.legend()
+    plt.title("N = "+str(N)+", n = "+str(n))
+    plt.xlabel("size of file")
+    plt.ylabel("speedup")
+    plt.show()
+
+
+def test_cuda_only():
+
+    sizes = []
+    speedup = []
+    patterns = one_pattern
+    print("computing for 1 pattern:")
+    for f in my_files:
+        print(f["name"])
+        time0, r0 = get_results("normal", f["name"], patterns)
+        time1, r1 = get_results("cuda_only", f["name"], patterns)
+        print(r0==r1)
+        print(time0)
+        print(time1)
+        speedup.append(time0/time1)
+        sizes.append(f["size"])
+
+    plt.scatter(sizes, speedup, label="with 4 patterns")
+
+    plt.legend()
+    plt.title("N = " + str(N) + ", n = " + str(n))
+    plt.xlabel("size of file")
+    plt.ylabel("speedup")
+    plt.show()
+
+
+def test_cuda_mpi():
+    N = 1
+    n = 4
+    approx = 3
+
+    sizes = []
+    speedup = []
+    patterns = one_pattern
+    print("computing for 1 pattern:")
+    for f in my_files:
+        print(f["name"])
+        time0, r0 = get_results("normal", f["name"], patterns, N, n, approx)
+        time1, r1 = get_results("mpi_only", f["name"], patterns, N, n, approx)
+        print(r0==r1)
+        print(time0)
+        print(time1)
+        speedup.append(time0/time1)
+        sizes.append(f["size"])
+
+    plt.scatter(sizes, speedup, label="with 1 pattern")
+    plt.plot(sizes, np.ones(len(sizes))*n)
+
+
+    sizes = []
+    speedup = []
+    patterns = four_patterns
+    print("computing for 1 pattern:")
+    for f in my_files:
+        print(f["name"])
+        time0, r0 = get_results("normal", f["name"], patterns, N, n, approx)
+        time1, r1 = get_results("mpi_only", f["name"], patterns, N, n, approx)
+        print(r0==r1)
+        print(time0)
+        print(time1)
+        speedup.append(time0/time1)
+        sizes.append(f["size"])
+
+    plt.scatter(sizes, speedup, label="with 4 patterns")
+    plt.plot(sizes, np.ones(len(sizes))*n)
+
+    plt.legend()
     plt.title("N = "+str(N)+", n = "+str(n))
     plt.xlabel("size of file")
     plt.ylabel("speedup")
@@ -231,4 +332,3 @@ def test_mpi_only():
 
 
 compile_everything()
-test_mpi_only()
