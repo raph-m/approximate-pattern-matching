@@ -165,11 +165,11 @@ def pattern_parallelism(N=1, n=4, approx=3):
         current = "".join(np.random.choice(alphabet, x, replace=True))
         patterns.append(current)
 
-	lens = [len(p) for p in patterns]
-	indexes = np.argsort(lens)
-	indexes = indexes[::-1]
-	patterns2 = np.array(patterns)
-	patterns2 = patterns2[indexes]
+    lens = [len(p) for p in patterns]
+    indexes = np.argsort(lens)
+    indexes = indexes[::-1]
+    patterns2 = np.array(patterns)
+    patterns2 = patterns2[indexes]
 
     speedups = []
     for i in range(1, n_inf):
@@ -192,6 +192,7 @@ def pattern_parallelism(N=1, n=4, approx=3):
     plt.xlabel("number of patterns")
     plt.ylabel("speedup")
     plt.show()
+
 
 def speedup_ideal_patterns():
     patterns = [
@@ -284,7 +285,6 @@ def test_cuda_only():
     plt.show()
 
 
-
 def test_big_thing():
     N=30
     n=30
@@ -297,7 +297,6 @@ def test_big_thing():
     time2, _= get_results("mpi_cuda", my_file_3["name"], patterns, N, n, approx)
     print("duration for MPI+CUDA apm:"+str(time2))
     
-	
 
 def plot_theorique():
     sizes = []
@@ -322,4 +321,3 @@ def plot_theorique():
 
 compile_everything()
 test_big_thing()
-
