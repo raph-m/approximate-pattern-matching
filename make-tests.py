@@ -331,4 +331,25 @@ def test_cuda_mpi():
     plt.show()
 
 
+def plot_theorique():
+    sizes = []
+    times = []
+    patterns = one_pattern
+    print("computing for different patten sizes:")
+    for f in my_files:
+        print(f["name"])
+        time0, r0 = get_results("normal", f["name"], patterns, N, n, approx)
+        times.append(time0/time1)
+        sizes.append(f["size"])
+
+    plt.scatter(sizes, speedup, label="with 4 patterns")
+    plt.plot(sizes, np.ones(len(sizes))*n)
+
+    plt.legend()
+    plt.title("N = "+str(N)+", n = "+str(n))
+    plt.xlabel("size of file")
+    plt.ylabel("speedup")
+    plt.show()
+
+
 compile_everything()

@@ -9,3 +9,7 @@ obj/
 dna/test.fa
 dna/chr1.fa
 apm_omp
+dna/chr1_KI270710v1_random.fa
+dna/chr6.fa
+dna/chr6_GL000250v2_alt.fa
+dna/chrY.fa
