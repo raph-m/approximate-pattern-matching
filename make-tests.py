@@ -284,52 +284,20 @@ def test_cuda_only():
     plt.show()
 
 
-def test_cuda_mpi():
-    N = 1
-    n = 4
-    approx = 3
 
-    sizes = []
-    speedup = []
-    patterns = one_pattern
-    print("computing for 1 pattern:")
-    for f in my_files:
-        print(f["name"])
-        time0, r0 = get_results("normal", f["name"], patterns, N, n, approx)
-        time1, r1 = get_results("mpi_only", f["name"], patterns, N, n, approx)
-        print(r0==r1)
-        print(time0)
-        print(time1)
-        speedup.append(time0/time1)
-        sizes.append(f["size"])
-
-    plt.scatter(sizes, speedup, label="with 1 pattern")
-    plt.plot(sizes, np.ones(len(sizes))*n)
-
-
-    sizes = []
-    speedup = []
-    patterns = four_patterns
-    print("computing for 1 pattern:")
-    for f in my_files:
-        print(f["name"])
-        time0, r0 = get_results("normal", f["name"], patterns, N, n, approx)
-        time1, r1 = get_results("mpi_only", f["name"], patterns, N, n, approx)
-        print(r0==r1)
-        print(time0)
-        print(time1)
-        speedup.append(time0/time1)
-        sizes.append(f["size"])
-
-    plt.scatter(sizes, speedup, label="with 4 patterns")
-    plt.plot(sizes, np.ones(len(sizes))*n)
-
-    plt.legend()
-    plt.title("N = "+str(N)+", n = "+str(n))
-    plt.xlabel("size of file")
-    plt.ylabel("speedup")
-    plt.show()
-
+def test_big_thing():
+    N=30
+    n=30
+    approx=3
+    patterns=["ATTTTGC", "ATGCATTGC", "ATGCCGTTGC", "ACCCGATGAC", "ATGACCCCC", "TTTGCAC", "TTTTGCCATGC", "TGCAGACTGC", "TTC", "GCAAT", "AAAGCTGCAG", "AAAAAGTGGCCTGGCAGCCGTGGC"]
+    time0, _= get_results("normal", my_file_3["name"], patterns, N, n, approx)
+    print("duration for normal apm:"+str(time0))
+    time1, _= get_results("mpi_openmp", my_file_3["name"], patterns, N, n, approx)
+    print("duration for MPI+OMP apm:"+str(time1))
+    time2, _= get_results("mpi_cuda", my_file_3["name"], patterns, N, n, approx)
+    print("duration for MPI+CUDA apm:"+str(time2))
+    
+	
 
 def plot_theorique():
     sizes = []
@@ -353,3 +321,5 @@ def plot_theorique():
 
 
 compile_everything()
+test_big_thing()
+
