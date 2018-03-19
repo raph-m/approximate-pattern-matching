@@ -302,22 +302,27 @@ def plot_theorique():
     sizes = []
     times = []
     patterns = one_pattern
-    print("computing for different patten sizes:")
+    print("computing for different file sizes:")
     for f in my_files:
-        print(f["name"])
         time0, r0 = get_results("normal", f["name"], patterns, N, n, approx)
-        times.append(time0/time1)
+        times.append(time0)
         sizes.append(f["size"])
 
-    plt.scatter(sizes, speedup, label="with 4 patterns")
-    plt.plot(sizes, np.ones(len(sizes))*n)
+    print(times)
+    print(sizes)
 
-    plt.legend()
-    plt.title("N = "+str(N)+", n = "+str(n))
-    plt.xlabel("size of file")
-    plt.ylabel("speedup")
-    plt.show()
+    print("computing for different pattern sizes:")
+    alphabet = ['A', 'G', 'C', 'T']
+    for i in range(3, 50, 4):
+        current = "".join(np.random.choice(alphabet, i, replace=True))
+        patterns = [current]
+        time0, r0 = get_results("normal", my_file_1["name"], patterns, N, n, approx)
+        times.append(time0)
+        sizes.append(i)
+
+    print(times)
+    print(sizes)
 
 
 compile_everything()
-test_big_thing()
+plot_theorique()
