@@ -216,19 +216,31 @@ def test_mpi_only():
     for f in my_files:
         print(f["name"])
         time0, _ = get_results("normal", f["name"], patterns, N, n, approx)
-        time1, _ = get_results("mpi_only", f["name"], patterns, N, n, approx)
+        time1, _ = get_results("cuda_only", f["name"], patterns, N, n, approx)
         print(time0)
         print(time1)
         speedup.append(time0/time1)
         sizes.append(f["size"])
 
     plt.plot(sizes, speedup)
-    plt.plot(sizes, np.ones(len(sizes))*n)
     plt.title("N = "+str(N)+", n = "+str(n))
     plt.xlabel("size of file")
     plt.ylabel("speedup")
     plt.show()
 
+def test_big_thing():
+    N=30
+    n=30
+    approx=3
+    patterns=["ATTTTGC", "ATGCATTGC", "ATGCCGTTGC", "ACCCGATGAC", "ATGACCCCC", "TTTGCAC", "TTTTGCCATGC", "TGCAGACTGC", "TTC", "GCAAT", "AAAGCTGCAG", "AAAAAGTGGCCTGGCAGCCGTGGC"]
+    time0, _= get_results("normal", my_file_3["name"], patterns, N, n, approx)
+    print("duration for normal apm:"+str(time0))
+    time1, _= get_results("mpi_openmp", my_file_3["name"], patterns, N, n, approx)
+    print("duration for MPI+OMP apm:"+str(time1))
+    time2, _= get_results("mpi_cuda", my_file_3["name"], patterns, N, n, approx)
+    print("duration for MPI+CUDA apm:"+str(time2))
+    
+	
 
 compile_everything()
-test_mpi_only()
+test_big_thing()
