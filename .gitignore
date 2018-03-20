@@ -13,3 +13,4 @@ dna/chr1_KI270710v1_random.fa
 dna/chr6.fa
 dna/chr6_GL000250v2_alt.fa
 dna/chrY.fa
+/src/apm_omp_mpi_cuda.cpp
