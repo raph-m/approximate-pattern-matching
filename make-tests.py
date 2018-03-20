@@ -325,4 +325,4 @@ def plot_theorique():
 
 
 compile_everything()
-plot_theorique()
+test_big_thing()
