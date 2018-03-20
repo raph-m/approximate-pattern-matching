@@ -140,12 +140,14 @@ def test_big_thing():
     n=30
     approx=3
     patterns=["ATTTTGC", "ATGCATTGC", "ATGCCGTTGC", "ACCCGATGAC", "ATGACCCCC", "TTTGCAC", "TTTTGCCATGC", "TGCAGACTGC", "TTC", "GCAAT", "AAAGCTGCAG", "AAAAAGTGGCCTGGCAGCCGTGGC"]
-    time0, _= get_results("normal", my_file_3["name"], patterns, N, n, approx)
-    print("duration for normal apm:"+str(time0))
-    time1, _= get_results("mpi_openmp", my_file_3["name"], patterns, N, n, approx)
-    print("duration for MPI+OMP apm:"+str(time1))
     time2, _= get_results("mpi_cuda", my_file_3["name"], patterns, N, n, approx)
     print("duration for MPI+CUDA apm:"+str(time2))
+
+    time1, _= get_results("mpi_openmp", my_file_3["name"], patterns, N, n, approx)
+    print("duration for MPI+OMP apm:"+str(time1))
+
+    time0, _= get_results("normal", my_file_3["name"], patterns, N, n, approx)
+    print("duration for normal apm:"+str(time0))
 
 compile_everything()
 test_big_thing()
