@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import subprocess
 import random
 import numpy as np
@@ -156,9 +157,10 @@ my_file = {
     "name": "dna/chr6_GL000250v2_alt.fa",
 }
 
+
 print("testing on my file: " + my_file["name"])
 #  this is how you should do to run and print the results on the different C methods on your file:
-for meth in ["normal", "patterns" "mpi_only", "mpi_openmp", "mpi_cuda"]:
+for meth in ["normal", "patterns", "mpi_only", "mpi_openmp", "mpi_cuda"]:
     # put the patterns you are looking for here:
     pat = [
         "ATTGCC",
@@ -167,12 +169,14 @@ for meth in ["normal", "patterns" "mpi_only", "mpi_openmp", "mpi_cuda"]:
     N_ = 4
     n_ = 4
     approx_ = 3
-    t, r  = get_results(meth, my_file, N_, n_, approx_)
-    print("method " + meth + "did the job in " + str(r))
+    t, r  = get_results(meth, my_file["name"], pat,  N_, n_, approx_)
+    print("method " + meth + " did the job in " + str(t))
     print("result is: ")
     print(r)
     print("")
 
 print("launching test on very big file, this could take a few seconds: ")
 #  this is the code we ran during the presentation:
+
 test_big_thing()
+
